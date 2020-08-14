@@ -1,6 +1,6 @@
 {
     "name": "@appguru/luafmt",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "esversion": 6,
     "description": "A small Lua formatter / pretty printer",
     "main": "./index.js",
@@ -30,7 +30,6 @@
       "npm": ">= 3.0.0"
     },
     "dependencies": {
-      "lustils": ">= 1.0.1",
       "luon": ">= 1.0.6"
     },
     "devDependencies": {
