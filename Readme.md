@@ -17,16 +17,16 @@ Luafmt is licensed under the MIT license and written by Lars Mueller alias appgu
 
 ### Installation
 
-Install the NPM package [luafmt](https://npmjs.com/packages/luafmt):
+Install the NPM package [luafmt](https://npmjs.com/packages/appguru/luafmt):
 
 ```
-npm install luafmt
+npm install @appguru/luafmt
 ```
 
 And import it like this:
 
 ```javascript
-const { formatChunk } = require("luafmt");
+const { formatChunk } = require("@appguru/luafmt");
 ```
 
 #### `formatChunk(text)`
