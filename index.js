@@ -231,17 +231,13 @@ let formatters = {
     IndexExpression: (node, indent) => prettyPrint(node.base) + "[" + prettyPrint(node.index, indent) + "]",
 
     // TODO include sanity check if values are implemented for string literals (upstream feature needed)
-    StringLiteral: node => writeBeautifiedText(read(node.raw)),
+    StringLiteral: node => writeBeautifiedText(read(node.value || node.raw)),
     NumericLiteral: node => {
-        if (!node.value)
-            throw new Error("Node has no value");
+        node.value = node.value || read(node.raw);
         const rawUpper = node.raw.toUpperCase();
         if (rawUpper.startsWith("0X"))
             return "0x" + rawUpper.substring(2);
-        const result = writeBeautifiedText(node.value);
-        if (parse("x=" + result).body[0].init[0].value !== node.value)
-            throw new Error("Luon beautified number literal has invalid value");
-        return result;
+        return writeBeautifiedText(node.value);
     }
 };
 
