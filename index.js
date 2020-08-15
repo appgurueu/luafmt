@@ -133,7 +133,7 @@ let formatters = {
     LabelStatement: node => "::" + node.label + "::",
     GotoStatement: node => "goto " + node.label,
     BreakStatement: _ => "break",
-    ReturnStatement: (node, indent) => node.arguments.length ? "return" : ("return " + mapPrettyPrintJoin(node.arguments, indent)),
+    ReturnStatement: (node, indent) => node.arguments.length === 0 ? "return" : ("return " + mapPrettyPrintJoin(node.arguments, indent)),
     DoStatement: block(() => "do"),
 
     // assignments
