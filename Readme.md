@@ -17,7 +17,7 @@ Luafmt is licensed under the MIT license and written by Lars Mueller alias appgu
 
 ### Installation
 
-Install the NPM package [luafmt](https://npmjs.com/packages/@appguru/luafmt):
+Install the NPM package [luafmt](https://npmjs.com/package/@appguru/luafmt):
 
 ```
 npm install @appguru/luafmt
