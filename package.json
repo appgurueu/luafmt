@@ -1,39 +1,42 @@
 {
-    "name": "@appguru/luafmt",
-    "version": "1.0.7",
-    "esversion": 6,
-    "description": "A small Lua formatter / pretty printer",
-    "main": "./index.js",
-    "scripts": {
-      "test": "./test.js"
-    },
-    "repository": {
-      "type": "git",
-      "url": "git+https://github.com/appgurueu/luafmt.git"
-    },
-    "keywords": [
-      "lightweight", "small", "lite",
-      "lua",
-      "formatter", "pretty-printer"
-    ],
-    "author": {
-      "name": "Lars Mueller",
-      "email": "appgurulars@gmx.de",
-      "url": "https://appgurueu.github.io"
-    },
-    "license": "MIT",
-    "bugs": {
-      "url": "https://github.com/appgurueu/luafmt/issues"
-    },
-    "engines": {
-      "node": ">= 6.0.0",
-      "npm": ">= 3.0.0"
-    },
-    "dependencies": {
-      "luon": ">= 1.2.3"
-    },
-    "devDependencies": {
-      "litests": ">= 1.0.6"
-    },
-    "homepage": "https://github.com/appgurueu/luafmt"
-  }
+  "name": "@appguru/luafmt",
+  "version": "1.0.7",
+  "esversion": 6,
+  "description": "A small Lua formatter / pretty printer",
+  "main": "./index.js",
+  "scripts": {
+    "test": "./test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/appgurueu/luafmt.git"
+  },
+  "keywords": [
+    "lightweight",
+    "small",
+    "lite",
+    "lua",
+    "formatter",
+    "pretty-printer"
+  ],
+  "author": {
+    "name": "Lars Mueller",
+    "email": "appgurulars@gmx.de",
+    "url": "https://appgurueu.github.io"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/appgurueu/luafmt/issues"
+  },
+  "engines": {
+    "node": ">= 6.0.0",
+    "npm": ">= 3.0.0"
+  },
+  "dependencies": {
+    "luon": ">= 1.2.3"
+  },
+  "devDependencies": {
+    "litests": ">= 1.0.6"
+  },
+  "homepage": "https://github.com/appgurueu/luafmt"
+}
