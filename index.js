@@ -35,18 +35,17 @@ for (let i = 0; i < _precedency.length; i++) {
 }
 
 const commentParents = {
-    Chunk: true,
-    DoStatement: true,
-    FunctionDeclaration: true,
-    IfStatement: false,
-    IfClause: true,
-    ElseIfClause: true,
-    ElseClause: true,
-    WhileStatement: true,
-    RepeatStatement: true,
-    ForNumericStatement: true,
-    ForGenericStatement: true,
-    TableConstructorExpression: true
+    Chunk: "body",
+    DoStatement: "body",
+    FunctionDeclaration: "body",
+    IfClause: "body",
+    ElseifClause: "body",
+    ElseClause: "body",
+    WhileStatement: "body",
+    RepeatStatement: "body",
+    ForNumericStatement: "body",
+    ForGenericStatement: "body",
+    TableConstructorExpression: "fields"
 };
 
 // HACK to make luaparse ranges be from "if" to "end" and not from "if" to "then" for IfClauses
@@ -78,7 +77,7 @@ const insertComment = (node, comment) => {
             const comment_parent = comment_parent_index !== -1 && children[comment_parent_index];
             if (comment_parent && insertComment(comment_parent, comment))
                 return true;
-            if (commentParents[node.type]) {
+            if (commentParents[node.type] === key) {
                 if (children.length) {
                     comment_parent_index = comment_parent ? comment_parent_index : children.findIndex(node => node.range[0] > comment.range[1]);
                     if (comment_parent_index === -1)
@@ -151,7 +150,7 @@ let formatters = {
         let out = "if " + prettyPrint(clause.condition, indent - 1) + " then" + ind + prettyPrint(clause.body, indent);
         for (let i = 1; i < clauses.length; i++) {
             let clause = clauses[i];
-            out += prev_ind + "else" + (clause.type === "ElseIfClause" ? ("if " + prettyPrint(clause.condition, indent - 1) + " then") : "") + ind + prettyPrint(clause.body, indent);
+            out += prev_ind + "else" + (clause.type === "ElseifClause" ? ("if " + prettyPrint(clause.condition, indent - 1) + " then") : "") + ind + prettyPrint(clause.body, indent);
         }
         return out + prev_ind + "end";
     },
@@ -171,7 +170,7 @@ let formatters = {
         let argument_pp = prettyPrint(argument, indent);
         if (isBinaryExpression(argument) && precedency[argument.operator] >= precedency.unary)
             argument_pp = "(" + argument_pp + ")";
-        else
+        else if (operator !== "-")
             argument_pp = " " + argument_pp;
         return operator + argument_pp;
     },
@@ -213,8 +212,10 @@ let formatters = {
     TableKeyString: (node, indent) => prettyPrint(node.key, indent) + " = " + prettyPrint(node.value, indent),
     TableValue: (node, indent) => prettyPrint(node.value, indent),
     TableConstructorExpression: (node, indent) => {
-        indent++;
         const length = node.fields.length
+        if (length === 0)
+            return "{}"
+        indent++;
         const newline_ind = "\n" + indentationText(indent);
         let table = "{";
         for (let i = 0; i < length - 1; i++) {
@@ -227,8 +228,8 @@ let formatters = {
             table += newline_ind + prettyPrint(node.fields[length - 1], indent);
         return table + "\n" + indentationText(indent - 1) + "}";
     },
-    MemberExpression: (node, indent) => prettyPrint(node.base) + node.indexer + prettyPrint(node.identifier, indent),
-    IndexExpression: (node, indent) => prettyPrint(node.base) + "[" + prettyPrint(node.index, indent) + "]",
+    MemberExpression: (node, indent) => prettyPrint(node.base, indent) + node.indexer + prettyPrint(node.identifier, indent),
+    IndexExpression: (node, indent) => prettyPrint(node.base, indent) + "[" + prettyPrint(node.index, indent) + "]",
 
     // TODO include sanity check if values are implemented for string literals (upstream feature needed)
     StringLiteral: node => writeBeautifiedText(read(node.value || node.raw)),

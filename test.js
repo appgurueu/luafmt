@@ -9,8 +9,16 @@ new litest.Tester(luafmt.formatChunk).testEqualsAll({
     "f('text')": `f"text"`,
     "f(\"text\")": `f"text"`,
     "f[[text]]": `f"text"`,
-    "f({table})": `f{\n\ttable\n}`,
-    "if _ then --comment \n do _=_--another comment\n end end": `if _ then
+    "f({table})":
+`f{
+\ttable
+}`,
+    "f({table})._ = _":
+`f{
+\ttable
+}._ = _`,
+    "if _ then --comment \n do _=_--another comment\n end end":
+`if _ then
 \t-- comment
 \tdo
 \t\t_ = _
@@ -18,11 +26,28 @@ new litest.Tester(luafmt.formatChunk).testEqualsAll({
 \tend
 end`,
     "_=--[[comment]]_": "-- comment\n_ = _",
-    "--[[multi\nline]]": `--[[
+    "--[[multi\nline]]":
+`--[[
 \tmulti
 \tline
 ]]`,
     "a = 1*1 + 1": "a = 1 * 1 + 1",
     "a = 1 + 1 * 1": "a = 1 + 1 * 1",
-    "a = (1+1)*(1+1)": "a = (1 + 1) * (1 + 1)"
+    "a = (1+1)*(1+1)": "a = (1 + 1) * (1 + 1)",
+    "function _()function _() if _ then --[[comment]] end end end":
+`function _()
+\tfunction _()
+\t\tif _ then
+\t\t\t-- comment
+\t\tend
+\tend
+end`,
+"do do do --[[comment]] end end end":
+`do
+\tdo
+\t\tdo
+\t\t\t-- comment
+\t\tend
+\tend
+end`
 });

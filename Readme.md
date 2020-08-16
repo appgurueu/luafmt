@@ -37,3 +37,5 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
 
 * `v1.0.0`
   * The initial release
+* `v1.0.7`
+  * Lots of fixes
