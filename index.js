@@ -107,8 +107,9 @@ const block = (fnc, modify) => {
     return (node, indent) => {
         const prev_ind = "\n" + "\t".repeat(indent);
         const ind = "\n" + "\t".repeat(indent + 1);
-        return !modify ? (fnc(node, indent) + ind + prettyPrint(node.body, indent + 1) + prev_ind + "end") :
-            (fnc(node, indent, ind + prettyPrint(node.body, indent + 1) + prev_ind));
+        const body_formatted = node.body.length ? ind + prettyPrint(node.body, indent + 1) + prev_ind : " ";
+        return !modify ? (fnc(node, indent)  + body_formatted + "end") :
+            (fnc(node, indent, body_formatted));
     }
 }
 
@@ -170,7 +171,7 @@ let formatters = {
         let argument_pp = prettyPrint(argument, indent);
         if (isBinaryExpression(argument) && precedency[argument.operator] >= precedency.unary)
             argument_pp = "(" + argument_pp + ")";
-        else if (operator !== "-")
+        else if (operator !== "-" && operator !== "#")
             argument_pp = " " + argument_pp;
         return operator + argument_pp;
     },
