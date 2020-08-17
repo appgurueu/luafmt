@@ -39,3 +39,6 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
   * The initial release
 * `v1.0.7`
   * Lots of fixes
+* `v1.0.8`
+  * Empty blocks are now just a single space, no space after `#`
+  * Fixed dependency constraints
