@@ -33,10 +33,11 @@
     "npm": ">= 3.0.0"
   },
   "dependencies": {
-    "luon": ">= 1.2.3"
+    "luon": "^1.2.3",
+    "luaparse": "^0.3.0"
   },
   "devDependencies": {
-    "litests": ">= 1.0.6"
+    "litests": "^1.0.6"
   },
   "homepage": "https://github.com/appgurueu/luafmt"
 }
