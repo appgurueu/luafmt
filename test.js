@@ -34,6 +34,9 @@ end`,
     "a = 1*1 + 1": "a = 1 * 1 + 1",
     "a = 1 + 1 * 1": "a = 1 + 1 * 1",
     "a = (1+1)*(1+1)": "a = (1 + 1) * (1 + 1)",
+    "a = 1 + (1 + 1) + 1": "a = (1 + 1 + 1) + 1",
+    "_ = not (1 and 1)": "_ = not(1 and 1)",
+    "_ = _ or not ((_ and _) or (_ and _))": "_ = _ or not(_ and _ or _ and _)",
     "function _()function _() if _ then --[[comment]] end end end":
 `function _()
 \tfunction _()

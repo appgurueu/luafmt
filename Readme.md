@@ -42,3 +42,5 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
 * `v1.0.8`
   * Empty blocks are now just a single space, no space after `#`
   * Fixed dependency constraints
+* `v1.0.9`
+  * Fixed operator precedence

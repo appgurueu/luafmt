@@ -169,9 +169,9 @@ let formatters = {
             argument
         } = node;
         let argument_pp = prettyPrint(argument, indent);
-        if (isBinaryExpression(argument) && precedency[argument.operator] >= precedency.unary)
+        if (isBinaryExpression(argument) && precedency[argument.operator] < precedency.unary)
             argument_pp = "(" + argument_pp + ")";
-        else if (operator !== "-" && operator !== "#")
+        else if (operator === "not")
             argument_pp = " " + argument_pp;
         return operator + argument_pp;
     },
@@ -181,11 +181,12 @@ let formatters = {
             right,
             operator
         } = node;
+        const op_precedency = precedency[operator]
         let left_pp = prettyPrint(left, indent);
         let right_pp = prettyPrint(right, indent);
-        if (isBinaryExpression(left) && precedency[left.operator] < precedency[operator])
+        if (isBinaryExpression(left) && precedency[left.operator] <= op_precedency)
             left_pp = "(" + left_pp + ")";
-        if (isBinaryExpression(right) && precedency[right.operator] < precedency[operator])
+        if (isBinaryExpression(right) && precedency[right.operator] < op_precedency)
             right_pp = "(" + right_pp + ")";
         return left_pp + " " + operator + " " + right_pp;
     },
