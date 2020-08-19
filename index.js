@@ -115,6 +115,22 @@ const block = (fnc, modify) => {
 
 const mapPrettyPrint = (array, indent) => array.map(node => prettyPrint(node, indent));
 const mapPrettyPrintJoin = (array, indent) => mapPrettyPrint(array, indent).join(", ");
+const indexNoParens = {
+    Identifier: true,
+    MemberExpression: true,
+    IndexExpression: true,
+    CallStatement: true,
+    CallExpression: true,
+    TableCallExpression: true,
+    StringCallExpression: true
+};
+const indexPrettyPrint = (node, indent) => {
+    const {
+        base
+    } = node;
+    const base_formatted = prettyPrint(base, indent);
+    return indexNoParens[base.type] ? base_formatted : "(" + base_formatted + ")";
+};
 
 const AssignmentStatement = (node, indent) => mapPrettyPrintJoin(node.variables, indent) + " = " + mapPrettyPrintJoin(node.init, indent);
 let formatters = {
@@ -202,13 +218,13 @@ let formatters = {
             if (argument.type === "TableConstructorExpression")
                 return formatters.TableCallExpression({
                     base: node.base,
-                    argument: argument
+                    arguments: argument
                 }, indent);
         }
         return prettyPrint(node.base, indent) + "(" + mapPrettyPrintJoin(node.arguments, indent) + ")";
     },
     StringCallExpression: (node, indent) => prettyPrint(node.base, indent) + prettyPrint(node.argument),
-    TableCallExpression: (node, indent) => prettyPrint(node.base, indent) + prettyPrint(node.argument, indent),
+    TableCallExpression: (node, indent) => prettyPrint(node.base, indent) + prettyPrint(node.arguments, indent),
 
     TableKey: (node, indent) => "[" + prettyPrint(node.key, indent) + "] = " + prettyPrint(node.value, indent),
     TableKeyString: (node, indent) => prettyPrint(node.key, indent) + " = " + prettyPrint(node.value, indent),
@@ -230,8 +246,8 @@ let formatters = {
             table += newline_ind + prettyPrint(node.fields[length - 1], indent);
         return table + "\n" + indentationText(indent - 1) + "}";
     },
-    MemberExpression: (node, indent) => prettyPrint(node.base, indent) + node.indexer + prettyPrint(node.identifier, indent),
-    IndexExpression: (node, indent) => prettyPrint(node.base, indent) + "[" + prettyPrint(node.index, indent) + "]",
+    MemberExpression: (node, indent) => indexPrettyPrint(node, indent) + node.indexer + prettyPrint(node.identifier, indent),
+    IndexExpression: (node, indent) => indexPrettyPrint(node, indent) + "[" + prettyPrint(node.index, indent) + "]",
 
     // TODO include sanity check if values are implemented for string literals (upstream feature needed)
     StringLiteral: node => writeBeautifiedText(read(node.value || node.raw)),

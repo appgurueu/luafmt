@@ -44,3 +44,5 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
   * Fixed dependency constraints
 * `v1.0.9`
   * Fixed operator precedence
+* `v1.0.10`
+  * Fixed table index operators (adding parens around base)
