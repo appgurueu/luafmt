@@ -105,9 +105,18 @@ const indentationText = number => "\t".repeat(number);
 
 const block = (fnc, modify) => {
     return (node, indent) => {
-        const prev_ind = "\n" + "\t".repeat(indent);
-        const ind = "\n" + "\t".repeat(indent + 1);
-        const body_formatted = node.body.length ? ind + prettyPrint(node.body, indent + 1) + prev_ind : " ";
+        const {
+            body
+        } = node;
+        const body_length = body.length;
+        const body_pp = prettyPrint(body, indent + 1);
+        let body_formatted;
+        if (body_length === 0)
+            body_formatted = " ";
+        else if (body_length === 1 && body[0].type !== "Comment" && body_pp.length <= 60 && !body_pp.includes("\n"))
+            body_formatted = " " + body_pp + " ";
+        else
+            body_formatted = "\n" + indentationText(indent + 1) + body_pp + "\n" + indentationText(indent);
         return !modify ? (fnc(node, indent)  + body_formatted + "end") :
             (fnc(node, indent, body_formatted));
     }
@@ -158,18 +167,19 @@ let formatters = {
     FunctionDeclaration: block(node => (node.isLocal ? "local " : "") + "function" + (node.identifier ? (" " + prettyPrint(node.identifier)) : "") + "(" + mapPrettyPrintJoin(node.parameters) + ")"),
 
     // if-[elseif]-[else] chains
+    IfClause: block((node, indent) => "if " + prettyPrint(node.condition, indent) + " then"),
+    ElseifClause: block((node, indent) => "elseif " + prettyPrint(node.condition, indent) + " then"),
+    ElseClause: block(() => "else"),
     IfStatement: (node, indent) => {
         const clauses = node.clauses;
         let clause = clauses[0];
         const prev_ind = "\n" + indentationText(indent);
-        indent++;
-        const ind = "\n" + "\t".repeat(indent);
-        let out = "if " + prettyPrint(clause.condition, indent - 1) + " then" + ind + prettyPrint(clause.body, indent);
+        let out = prettyPrint(clause, indent);
         for (let i = 1; i < clauses.length; i++) {
-            let clause = clauses[i];
-            out += prev_ind + "else" + (clause.type === "ElseifClause" ? ("if " + prettyPrint(clause.condition, indent - 1) + " then") : "") + ind + prettyPrint(clause.body, indent);
+            clause = clauses[i];
+            out += prev_ind + prettyPrint(clause, indent);
         }
-        return out + prev_ind + "end";
+        return out;
     },
 
     // loops
@@ -187,7 +197,7 @@ let formatters = {
         let argument_pp = prettyPrint(argument, indent);
         if (isBinaryExpression(argument) && precedency[argument.operator] < precedency.unary)
             argument_pp = "(" + argument_pp + ")";
-        else if (operator === "not")
+        else if (operator === "not" || argument.type === "UnaryExpression")
             argument_pp = " " + argument_pp;
         return operator + argument_pp;
     },
@@ -230,21 +240,24 @@ let formatters = {
     TableKeyString: (node, indent) => prettyPrint(node.key, indent) + " = " + prettyPrint(node.value, indent),
     TableValue: (node, indent) => prettyPrint(node.value, indent),
     TableConstructorExpression: (node, indent) => {
-        const length = node.fields.length
+        const length = node.fields.length;
         if (length === 0)
-            return "{}"
+            return "{}";
         indent++;
-        const newline_ind = "\n" + indentationText(indent);
+        const fields_pp = mapPrettyPrint(node.fields, indent);
+        const inline = length < 3 && !node.fields.find(field => field.type === "Comment") && !fields_pp.find(formatted => formatted.length > 60 || formatted.includes("\n"));
+        const spacing = inline ? " " : "\n" + indentationText(indent);
+        const end_spacing = inline ? " " : "\n" + indentationText(indent - 1);
         let table = "{";
         for (let i = 0; i < length - 1; i++) {
             const field = node.fields[i];
-            table += newline_ind + prettyPrint(field, indent);
+            table += spacing + prettyPrint(field, indent);
             if (field.type !== "Comment" && node.fields[i + 1].type !== "Comment")
                 table += ",";
         }
         if (length >= 1)
-            table += newline_ind + prettyPrint(node.fields[length - 1], indent);
-        return table + "\n" + indentationText(indent - 1) + "}";
+            table += spacing + prettyPrint(node.fields[length - 1], indent);
+        return table + end_spacing + "}";
     },
     MemberExpression: (node, indent) => indexPrettyPrint(node, indent) + node.indexer + prettyPrint(node.identifier, indent),
     IndexExpression: (node, indent) => indexPrettyPrint(node, indent) + "[" + prettyPrint(node.index, indent) + "]",

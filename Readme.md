@@ -46,3 +46,6 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
   * Fixed operator precedence
 * `v1.0.10`
   * Fixed table index operators (adding parens around base)
+* `v1.1.0`
+  * Fixed double minus (`- -x`)
+  * Added inline tables & blocks

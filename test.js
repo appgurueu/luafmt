@@ -1,22 +1,18 @@
 "use strict";
 const litest = require("litests");
 const luafmt = require("./index.js");
+if (require("./index.js").formatChunk === require("./index.js").formatChunk)
+    throw "luafmt relies on require not caching objects";
 
 new litest.Tester(luafmt.formatChunk).testEqualsAll({
     "_=true,false,nil,...": "_ = true, false, nil, ...", // atomics
     "_=1,1000,1000000,0xff": "_ = 1, 1e3, 1e6, 0xFF", // simple number formatting
-    "_=[['s]], [[\"quote\"]]": `_ = "'s", '"quote"'`,
-    "f('text')": `f"text"`,
-    "f(\"text\")": `f"text"`,
-    "f[[text]]": `f"text"`,
-    "f({table})":
-`f{
-\ttable
-}`,
-    "f({table})._ = _":
-`f{
-\ttable
-}._ = _`,
+    "_=[['_]], [[\"_\"]]": `_ = "'_", '"_"'`,
+    "f('_')": `f"_"`,
+    "f(\"_\")": `f"_"`,
+    "f[[_]]": `f"_"`,
+    "f({_})": "f{ _ }",
+    "f({_})._ = _": "f{ _ }._ = _",
     "if _ then --comment \n do _=_--another comment\n end end":
 `if _ then
 \t-- comment
@@ -53,9 +49,9 @@ end`,
 \t\tend
 \tend
 end`,
-"_{_=_}": `_{
-\t_ = _
-}`,
-"_=('string')._": `_ = ("string")._`,
-"_=({})._": "_ = ({})._"
+    "_{_=_}": `_{ _ = _ }`,
+    "_=('string')._": `_ = ("string")._`,
+    "_=({})._": "_ = ({})._",
+    "_=- -_": "_ = - -_",
+    "if _ then _()end": "if _ then _() end"
 });
