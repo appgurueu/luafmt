@@ -1,8 +1,6 @@
 "use strict";
 const litest = require("litests");
 const luafmt = require("./index.js");
-if (require("./index.js").formatChunk === require("./index.js").formatChunk)
-    throw "luafmt relies on require not caching objects";
 
 new litest.Tester(luafmt.formatChunk).testEqualsAll({
     "_=true,false,nil,...": "_ = true, false, nil, ...", // atomics
@@ -53,5 +51,8 @@ end`,
     "_=('string')._": `_ = ("string")._`,
     "_=({})._": "_ = ({})._",
     "_=- -_": "_ = - -_",
-    "if _ then _()end": "if _ then _() end"
+    "if _ then _()end": "if _ then _() end",
+    "if a then a() elseif b then b() else c() end": `if a then a()
+elseif b then b()
+else c() end`
 });

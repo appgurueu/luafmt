@@ -103,7 +103,8 @@ const isBinaryExpression = node => node.type === "LogicalExpression" || node.typ
 
 const indentationText = number => "\t".repeat(number);
 
-const block = (fnc, modify) => {
+const block = (fnc, formatted_body_consumer, trailing_spaces) => {
+    trailing_spaces = trailing_spaces || !formatted_body_consumer;
     return (node, indent) => {
         const {
             body
@@ -114,10 +115,10 @@ const block = (fnc, modify) => {
         if (body_length === 0)
             body_formatted = " ";
         else if (body_length === 1 && body[0].type !== "Comment" && body_pp.length <= 60 && !body_pp.includes("\n"))
-            body_formatted = " " + body_pp + " ";
+            body_formatted = " " + body_pp + (trailing_spaces ? " " : "");
         else
-            body_formatted = "\n" + indentationText(indent + 1) + body_pp + "\n" + indentationText(indent);
-        return !modify ? (fnc(node, indent)  + body_formatted + "end") :
+            body_formatted = "\n" + indentationText(indent + 1) + body_pp + (trailing_spaces ? "\n" + indentationText(indent) : "");
+        return !formatted_body_consumer ? (fnc(node, indent) + body_formatted + "end") :
             (fnc(node, indent, body_formatted));
     }
 }
@@ -142,6 +143,21 @@ const indexPrettyPrint = (node, indent) => {
 };
 
 const AssignmentStatement = (node, indent) => mapPrettyPrintJoin(node.variables, indent) + " = " + mapPrettyPrintJoin(node.init, indent);
+
+const generateClauseFormatters = (trailing_spaces) => {
+    const IfClause = block((node, indent, body_formatted) => "if " + prettyPrint(node.condition, indent) + " then" + body_formatted, true, trailing_spaces);
+    const ElseifClause = (node, indent) => "else" + IfClause(node, indent);
+    const ElseClause = block((node, indent, body_formatted) => "else" + body_formatted, true, true);
+    return {
+        IfClause,
+        ElseifClause,
+        ElseClause
+    };
+};
+
+const clauseFormatters = generateClauseFormatters();
+const clauseFormattersTrailingSpaces = generateClauseFormatters(true);
+
 let formatters = {
     // comments
     Comment: (node, indent) => {
@@ -167,24 +183,22 @@ let formatters = {
     FunctionDeclaration: block(node => (node.isLocal ? "local " : "") + "function" + (node.identifier ? (" " + prettyPrint(node.identifier)) : "") + "(" + mapPrettyPrintJoin(node.parameters) + ")"),
 
     // if-[elseif]-[else] chains
-    IfClause: block((node, indent) => "if " + prettyPrint(node.condition, indent) + " then"),
-    ElseifClause: block((node, indent) => "elseif " + prettyPrint(node.condition, indent) + " then"),
-    ElseClause: block(() => "else"),
     IfStatement: (node, indent) => {
         const clauses = node.clauses;
-        let clause = clauses[0];
+        let out = "";
         const prev_ind = "\n" + indentationText(indent);
-        let out = prettyPrint(clause, indent);
-        for (let i = 1; i < clauses.length; i++) {
-            clause = clauses[i];
-            out += prev_ind + prettyPrint(clause, indent);
+        for (let i = 0; i < clauses.length; i++) {
+            const clause = clauses[i];
+            if (i !== 0)
+                out += prev_ind;
+            out += ((i === clauses.length - 1) ? clauseFormattersTrailingSpaces : clauseFormatters)[clause.type](clause, indent);
         }
-        return out;
+        return out + "end";
     },
 
     // loops
     WhileStatement: block((node, indent) => "while " + prettyPrint(node.condition, indent) + " do"),
-    RepeatStatement: block((node, indent, thing) => "repeat" + thing + "until " + prettyPrint(node.condition, indent), true),
+    RepeatStatement: block((node, indent, body_formatted) => "repeat" + body_formatted + "until " + prettyPrint(node.condition, indent), true),
     ForNumericStatement: block(node => "for " + prettyPrint(node.variable) + " = " + mapPrettyPrintJoin([node.start, node.end, node.step].filter(x => x)) + " do"),
     ForGenericStatement: block((node, indent) => "for " + mapPrettyPrintJoin(node.variables) + " in " + mapPrettyPrintJoin(node.iterators, indent) + " do"),
 

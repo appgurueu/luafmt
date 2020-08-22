@@ -49,3 +49,5 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
 * `v1.1.0`
   * Fixed double minus (`- -x`)
   * Added inline tables & blocks
+* `v1.1.1`
+  * Fixed if statement formatting
