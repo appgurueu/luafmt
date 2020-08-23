@@ -51,3 +51,6 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
   * Added inline tables & blocks
 * `v1.1.1`
   * Fixed if statement formatting
+* `v1.1.2`
+  * Fixed local declarations without initializers (`local name`)
+  * Tweaked table inlining

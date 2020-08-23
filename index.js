@@ -142,7 +142,7 @@ const indexPrettyPrint = (node, indent) => {
     return indexNoParens[base.type] ? base_formatted : "(" + base_formatted + ")";
 };
 
-const AssignmentStatement = (node, indent) => mapPrettyPrintJoin(node.variables, indent) + " = " + mapPrettyPrintJoin(node.init, indent);
+const AssignmentStatement = (node, indent) => mapPrettyPrintJoin(node.variables, indent) + (node.init.length ? " = " + mapPrettyPrintJoin(node.init, indent) : "");
 
 const generateClauseFormatters = (trailing_spaces) => {
     const IfClause = block((node, indent, body_formatted) => "if " + prettyPrint(node.condition, indent) + " then" + body_formatted, true, trailing_spaces);
@@ -259,7 +259,7 @@ let formatters = {
             return "{}";
         indent++;
         const fields_pp = mapPrettyPrint(node.fields, indent);
-        const inline = length < 3 && !node.fields.find(field => field.type === "Comment") && !fields_pp.find(formatted => formatted.length > 60 || formatted.includes("\n"));
+        const inline = length <= 3 && !node.fields.find(field => field.type === "Comment") && !fields_pp.find(formatted => formatted.length > 60 || formatted.includes("\n"));
         const spacing = inline ? " " : "\n" + indentationText(indent);
         const end_spacing = inline ? " " : "\n" + indentationText(indent - 1);
         let table = "{";

@@ -54,5 +54,6 @@ end`,
     "if _ then _()end": "if _ then _() end",
     "if a then a() elseif b then b() else c() end": `if a then a()
 elseif b then b()
-else c() end`
+else c() end`,
+"local _": "local _"
 });
