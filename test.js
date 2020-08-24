@@ -55,5 +55,8 @@ end`,
     "if a then a() elseif b then b() else c() end": `if a then a()
 elseif b then b()
 else c() end`,
-"local _": "local _"
+"local _": "local _",
+"_=_\nfunction _()end": `_ = _
+
+function _() end`
 });

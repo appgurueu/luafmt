@@ -26,7 +26,7 @@ const _precedency = [
     ["<", ">", "<=", ">=", "~=", "=="],
     ["and"],
     ["or"]
-]
+];
 
 const precedency = {};
 for (let i = 0; i < _precedency.length; i++) {
@@ -103,6 +103,8 @@ const isBinaryExpression = node => node.type === "LogicalExpression" || node.typ
 
 const indentationText = number => "\t".repeat(number);
 
+const indentationNewline = number => "\n" + indentationText(number);
+
 const block = (fnc, formatted_body_consumer, trailing_spaces) => {
     trailing_spaces = trailing_spaces || !formatted_body_consumer;
     return (node, indent) => {
@@ -117,11 +119,11 @@ const block = (fnc, formatted_body_consumer, trailing_spaces) => {
         else if (body_length === 1 && body[0].type !== "Comment" && body_pp.length <= 60 && !body_pp.includes("\n"))
             body_formatted = " " + body_pp + (trailing_spaces ? " " : "");
         else
-            body_formatted = "\n" + indentationText(indent + 1) + body_pp + (trailing_spaces ? "\n" + indentationText(indent) : "");
+            body_formatted = indentationNewline(indent + 1) + body_pp + (trailing_spaces ? indentationNewline(indent) : "");
         return !formatted_body_consumer ? (fnc(node, indent) + body_formatted + "end") :
             (fnc(node, indent, body_formatted));
     }
-}
+};
 
 const mapPrettyPrint = (array, indent) => array.map(node => prettyPrint(node, indent));
 const mapPrettyPrintJoin = (array, indent) => mapPrettyPrint(array, indent).join(", ");
@@ -164,8 +166,7 @@ let formatters = {
         let content = node.value.trim();
         if (!node.raw.startsWith("--[") || content.indexOf("\n") === -1)
             return "-- " + content.trim();
-        const indentation = indentationText(indent + 1);
-        return "--" + writeLongText(indentation + content.replace(/\s*\n\s*/g, "\n" + indentation) + "\n" + indentationText(indent));
+        return "--" + writeLongText(indentationText(indent + 1) + content.replace(/\s*\n\s*/g, indentationNewline(indent + 1)) + indentationNewline(indent));
     },
 
     // various trivial stuff; identifiers, simple statements
@@ -186,7 +187,7 @@ let formatters = {
     IfStatement: (node, indent) => {
         const clauses = node.clauses;
         let out = "";
-        const prev_ind = "\n" + indentationText(indent);
+        const prev_ind = indentationNewline(indent);
         for (let i = 0; i < clauses.length; i++) {
             const clause = clauses[i];
             if (i !== 0)
@@ -260,8 +261,8 @@ let formatters = {
         indent++;
         const fields_pp = mapPrettyPrint(node.fields, indent);
         const inline = length <= 3 && !node.fields.find(field => field.type === "Comment") && !fields_pp.find(formatted => formatted.length > 60 || formatted.includes("\n"));
-        const spacing = inline ? " " : "\n" + indentationText(indent);
-        const end_spacing = inline ? " " : "\n" + indentationText(indent - 1);
+        const spacing = inline ? " " : indentationNewline(indent);
+        const end_spacing = inline ? " " : indentationNewline(indent - 1);
         let table = "{";
         for (let i = 0; i < length - 1; i++) {
             const field = node.fields[i];
@@ -292,10 +293,41 @@ for (const literal of ["BooleanLiteral", "NilLiteral", "VarargLiteral"])
 
 formatters.LogicalExpression = formatters.BinaryExpression;
 
+const extraNewlines = {
+    FunctionDeclaration: true
+};
+
 const prettyPrint = (node, indent) => {
-    const indent_str = "\t".repeat(indent);
-    if (Array.isArray(node))
-        return mapPrettyPrint(node, indent).join("\n" + indent_str);
+    if (Array.isArray(node)) {
+        const indentNewline = indentationNewline(indent);
+        let formatted = "";
+        let i = 0;
+        for (; i < node.length; i++) {
+            if (i > 0)
+                formatted += indentNewline;
+            let comments = [];
+            let j = i;
+            for (; j < node.length && node[j].type === "Comment"; j++)
+                comments.push(prettyPrint(node[j], indent));
+            if (i + comments.length === node.length) {
+                formatted += comments.join(indentNewline);
+                break;
+            }
+            i = j;
+            const child = node[i];
+            const extraNewline = extraNewlines[child.type];
+            if (extraNewline && i > 0)
+                formatted += indentNewline;
+            if (comments.length > 0) {
+                formatted += comments.join(indentNewline);
+                formatted += indentNewline;
+            }
+            formatted += prettyPrint(child, indent);
+            if (extraNewline && i < node.length - 1)
+                formatted += indentNewline;
+        }
+        return formatted;
+    }
     let formatter = formatters[node.type];
     if (!formatter)
         throw new Error("Formatter for " + node.type + " not implemented yet");
@@ -307,7 +339,7 @@ const prettyPrintText = (text) => {
     fixRanges(ast);
     insertComments(ast);
     return prettyPrint(ast, 0);
-}
+};
 
 module.exports = {
     formatChunk: prettyPrintText
