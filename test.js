@@ -58,5 +58,13 @@ else c() end`,
 "local _": "local _",
 "_=_\nfunction _()end": `_ = _
 
+function _() end`,
+"function _()end;function _()end": `function _() end
+
+function _() end`,
+"_ = function() end": "_ = function() end",
+"_()--comment\nfunction _()end": `_()
+
+-- comment
 function _() end`
 });
