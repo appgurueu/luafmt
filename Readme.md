@@ -58,3 +58,5 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
   * Tweaked table inlining
 * `v1.2.0`
   * Added extra newlines around function declarations feature
+* `v1.2.1`
+  * Fix table constructors containing comments

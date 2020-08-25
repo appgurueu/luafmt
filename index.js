@@ -260,12 +260,13 @@ let formatters = {
 		const spacing = inline ? " " : indentationNewline(indent)
 		const end_spacing = inline ? " " : indentationNewline(indent - 1)
 		let table = "{"
-		for (let i = 0; i < length - 1; i++) {
+		let afterField
+		for (let i = 0; i < length; i++) {
 			const field = node.fields[i]
+			if (afterField) table += ","
 			table += spacing + prettyPrint(field, indent)
-			if (field.type !== "Comment" && node.fields[i + 1].type !== "Comment") table += ","
+			afterField = field.type !== "Comment"
 		}
-		if (length >= 1) table += spacing + prettyPrint(node.fields[length - 1], indent)
 		return table + end_spacing + "}"
 	},
 	MemberExpression: (node, indent) => indexPrettyPrint(node, indent) + node.indexer + prettyPrint(node.identifier, indent),
@@ -293,7 +294,7 @@ const prettyPrint = (node, indent) => {
 	if (Array.isArray(node)) {
 		const indentNewline = indentationNewline(indent)
 		let formatted = ""
-		let extraNewline;
+		let extraNewline
 		let i = 0
 		for (; i < node.length; i++) {
 			if (i > 0 && !extraNewline) formatted += indentNewline
