@@ -54,3 +54,5 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
 * `v1.1.2`
   * Fixed local declarations without initializers (`local name`)
   * Tweaked table inlining
+* `v1.2.0`
+  * Added extra newlines around function declarations feature
