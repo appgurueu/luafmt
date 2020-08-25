@@ -12,6 +12,8 @@ Luafmt is licensed under the MIT license and written by Lars Mueller alias appgu
 * Neat literal formatting
 * Converts `({})` and `('')`/`("")`/`([[]])` calls to short forms
 * Moves comments to reasonable scopes (blocks or table constructors)
+* Table & function inlining
+* Extra newlines around function declarations
 
 ## API
 
