@@ -192,7 +192,9 @@ let formatters = {
 	// loops
 	WhileStatement: block((node, indent) => "while " + prettyPrint(node.condition, indent) + " do"),
 	RepeatStatement: block(
-		(node, indent, body_formatted) => "repeat" + body_formatted + "until " + prettyPrint(node.condition, indent),
+		(node, indent, body_formatted) =>
+			"repeat" + body_formatted + "until " + prettyPrint(node.condition, indent),
+		true,
 		true
 	),
 	ForNumericStatement: block(

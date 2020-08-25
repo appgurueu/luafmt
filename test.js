@@ -71,5 +71,11 @@ function _() end`,
 	_ = function() end,
 	-- comment
 	_ = function() end
-}`
+}`,
+"repeat _() until _": "repeat _() until _",
+"repeat _();_() until _": `repeat
+	_()
+	_()
+until _`,
+"if _ then _() end": "if _ then _() end"
 })

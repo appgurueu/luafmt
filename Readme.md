@@ -59,4 +59,7 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
 * `v1.2.0`
   * Added extra newlines around function declarations feature
 * `v1.2.1`
-  * Fix table constructors containing comments
+  * Fixed table constructors containing comments
+* `v1.2.2`
+  * Fixed repeat-until statement formatting
+  * Bumped `luon` version to `v1.2.6`
