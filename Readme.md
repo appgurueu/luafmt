@@ -9,7 +9,7 @@ Luafmt is licensed under the MIT license and written by Lars Mueller alias appgu
 ## Features
 
 * Fixes spacing & indentation
-* Neat literal formatting (note: doesn't touch hex number literals)
+* Neat literal formatting
 * Converts `({})` and `('')`/`("")`/`([[]])` calls to short forms
 * Moves comments to reasonable scopes (blocks or table constructors)
 
