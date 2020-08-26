@@ -28,12 +28,37 @@ npm install @appguru/luafmt
 And import it like this:
 
 ```javascript
-const { formatChunk } = require("@appguru/luafmt");
+const { formatChunk, formatter } = require("@appguru/luafmt");
 ```
 
 #### `formatChunk(text)`
 
 Takes a Lua chunk (think file / function body) as string and returns a formatted version, also as string.
+
+#### `formatter(conf)`
+
+```javascript
+const configuredFormatChunk = formatter({
+  // string
+  indent: "\t",
+  // string
+  newline: "\n",
+  // boolean
+  extra_newlines: true,
+  // object
+	inline: {
+    // object or false
+		block: {
+			max_exp_length // number, in characters
+    },
+    // object or false
+		table: {
+			max_field_count // number
+			max_field_length // number, in characters
+		}
+	}
+})
+```
 
 ### Versions
 
@@ -68,3 +93,5 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
   * Improved tests
 * `v1.2.4`
   * Fixed extra newlines
+* `v1.3.0`
+  * Added configuration

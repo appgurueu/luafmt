@@ -1,4 +1,6 @@
 "use strict"
+const lustils = require("lustils")
+
 const { parse, defaultOptions } = require("luaparse")
 
 const { read, writer, writeBeautifiedText } = require("luon")
@@ -84,27 +86,6 @@ const insertComments = chunk => chunk.comments.forEach(comment => insertComment(
 
 const isBinaryExpression = node => node.type === "LogicalExpression" || node.type === "BinaryExpression"
 
-const indentationText = number => "\t".repeat(number)
-
-const indentationNewline = number => "\n" + indentationText(number)
-
-const block = (fnc, formatted_body_consumer, trailing_spaces) => {
-	trailing_spaces = trailing_spaces || !formatted_body_consumer
-	return (node, indent) => {
-		const { body } = node
-		const body_length = body.length
-		const body_pp = prettyPrint(body, indent + 1)
-		let body_formatted
-		if (body_length === 0) body_formatted = " "
-		else if (body_length === 1 && body[0].type !== "Comment" && body_pp.length <= 60 && !body_pp.includes("\n"))
-			body_formatted = " " + body_pp + (trailing_spaces ? " " : "")
-		else body_formatted = indentationNewline(indent + 1) + body_pp + (trailing_spaces ? indentationNewline(indent) : "")
-		return !formatted_body_consumer ? fnc(node, indent) + body_formatted + "end" : fnc(node, indent, body_formatted)
-	}
-}
-
-const mapPrettyPrint = (array, indent) => array.map(node => prettyPrint(node, indent))
-const mapPrettyPrintJoin = (array, indent) => mapPrettyPrint(array, indent).join(", ")
 const indexNoParens = {
 	Identifier: true,
 	MemberExpression: true,
@@ -114,105 +95,105 @@ const indexNoParens = {
 	TableCallExpression: true,
 	StringCallExpression: true
 }
-const indexPrettyPrint = (node, indent) => {
-	const { base } = node
-	const base_formatted = prettyPrint(base, indent)
-	return indexNoParens[base.type] ? base_formatted : "(" + base_formatted + ")"
-}
 
-const AssignmentStatement = (node, indent) =>
-	mapPrettyPrintJoin(node.variables, indent) + (node.init.length ? " = " + mapPrettyPrintJoin(node.init, indent) : "")
-
-const generateClauseFormatters = trailing_spaces => {
-	const IfClause = block(
-		(node, indent, body_formatted) => "if " + prettyPrint(node.condition, indent) + " then" + body_formatted,
-		true,
-		trailing_spaces
-	)
-	const ElseifClause = (node, indent) => "else" + IfClause(node, indent)
-	const ElseClause = block((node, indent, body_formatted) => "else" + body_formatted, true, true)
-	return {
-		IfClause,
-		ElseifClause,
-		ElseClause
+const default_conf = {
+	indent: "\t",
+	newline: "\n",
+	extra_newlines: true,
+	inline: {
+		block: {
+			max_exp_length: 60
+		},
+		table: {
+			max_field_count: 3,
+			max_field_length: 60
+		}
 	}
 }
+Object.freeze(default_conf)
 
-const clauseFormatters = generateClauseFormatters()
-const clauseFormattersTrailingSpaces = generateClauseFormatters(true)
+const assertType = (value, type) => {
+	if (typeof value !== type) throw new TypeError("invalid type")
+}
 
-let formatters = {
-	// comments
-	Comment: (node, indent) => {
-		let content = node.value.trim()
-		if (!node.raw.startsWith("--[") || content.indexOf("\n") === -1) return "-- " + content.trim()
-		return (
-			"--" +
-			writeLongText(
-				indentationText(indent + 1) + content.replace(/\s*\n\s*/g, indentationNewline(indent + 1)) + indentationNewline(indent)
+const formatter = conf => {
+	assertType((conf = conf === undefined ? {} : conf), "object")
+	conf = lustils.object.complete(conf, default_conf)
+	let { indent, newline, extra_newlines, inline } = conf
+	if (!/^\s*$/.test(indent)) throw new Error('"indent" needs to be a string of spacing characters')
+	const indentationText = number => indent.repeat(number)
+	if (!{ "\n": true, "\r": true, "\r\n": true }[newline])
+		throw new Error('"newline" needs to be CR ("\\r"), LF ("\\n"), or CRLF ("\\r\\n")')
+	const indentationNewline = number => newline + indentationText(number)
+	assertType(extra_newlines, "boolean")
+	assertType(inline, "object")
+	inline = lustils.object.complete(inline, default_conf.inline)
+	let inline_block = inline.block
+	let inline_table = inline.table
+	if (inline_block !== false) {
+		assertType(inline_block, "object")
+		inline_block = lustils.object.complete(inline_block, default_conf.inline.block)
+		assertType(inline_block.max_exp_length, "number")
+	}
+	if (inline_table !== false) {
+		assertType(inline_table, "object")
+		inline_table = lustils.object.complete(inline_table, default_conf.inline.table)
+		assertType(inline_table.max_field_count, "number")
+		assertType(inline_table.max_field_length, "number")
+	}
+
+	const block = (fnc, formatted_body_consumer, trailing_spaces) => {
+		trailing_spaces = trailing_spaces || !formatted_body_consumer
+		return (node, indent) => {
+			const { body } = node
+			const body_length = body.length
+			const body_pp = prettyPrint(body, indent + 1)
+			let body_formatted
+			if (body_length === 0) body_formatted = " "
+			else if (
+				body_length === 1 &&
+				inline_block &&
+				body[0].type !== "Comment" &&
+				body_pp.length <= inline_block.max_exp_length &&
+				!body_pp.includes(newline)
 			)
-		)
-	},
-
-	// various trivial stuff; identifiers, simple statements
-	Identifier: node => node.name,
-	Chunk: (node, indent) => prettyPrint(node.body, indent),
-	LabelStatement: node => "::" + node.label + "::",
-	GotoStatement: node => "goto " + node.label,
-	BreakStatement: _ => "break",
-	ReturnStatement: (node, indent) => (node.arguments.length === 0 ? "return" : "return " + mapPrettyPrintJoin(node.arguments, indent)),
-	DoStatement: block(() => "do"),
-
-	// assignments
-	AssignmentStatement,
-	LocalStatement: (node, indent) => "local " + AssignmentStatement(node, indent),
-	FunctionDeclaration: block(
-		node =>
-			(node.isLocal ? "local " : "") +
-			"function" +
-			(node.identifier ? " " + prettyPrint(node.identifier) : "") +
-			"(" +
-			mapPrettyPrintJoin(node.parameters) +
-			")"
-	),
-
-	// if-[elseif]-[else] chains
-	IfStatement: (node, indent) => {
-		const clauses = node.clauses
-		let out = ""
-		const prev_ind = indentationNewline(indent)
-		for (let i = 0; i < clauses.length; i++) {
-			const clause = clauses[i]
-			if (i !== 0) out += prev_ind
-			out += (i === clauses.length - 1 ? clauseFormattersTrailingSpaces : clauseFormatters)[clause.type](clause, indent)
+				body_formatted = " " + body_pp + (trailing_spaces ? " " : "")
+			else body_formatted = indentationNewline(indent + 1) + body_pp + (trailing_spaces ? indentationNewline(indent) : "")
+			return !formatted_body_consumer ? fnc(node, indent) + body_formatted + "end" : fnc(node, indent, body_formatted)
 		}
-		return out + "end"
-	},
+	}
 
-	// loops
-	WhileStatement: block((node, indent) => "while " + prettyPrint(node.condition, indent) + " do"),
-	RepeatStatement: block(
-		(node, indent, body_formatted) =>
-			"repeat" + body_formatted + "until " + prettyPrint(node.condition, indent),
-		true,
-		true
-	),
-	ForNumericStatement: block(
-		node => "for " + prettyPrint(node.variable) + " = " + mapPrettyPrintJoin([node.start, node.end, node.step].filter(x => x)) + " do"
-	),
-	ForGenericStatement: block(
-		(node, indent) => "for " + mapPrettyPrintJoin(node.variables) + " in " + mapPrettyPrintJoin(node.iterators, indent) + " do"
-	),
+	const mapPrettyPrint = (array, indent) => array.map(node => prettyPrint(node, indent))
+	const mapPrettyPrintJoin = (array, indent) => mapPrettyPrint(array, indent).join(", ")
 
-	// operators / expressions / calls
-	UnaryExpression: (node, indent) => {
-		const { operator, argument } = node
-		let argument_pp = prettyPrint(argument, indent)
-		if (isBinaryExpression(argument) && precedency[argument.operator] < precedency.unary) argument_pp = "(" + argument_pp + ")"
-		else if (operator === "not" || argument.type === "UnaryExpression") argument_pp = " " + argument_pp
-		return operator + argument_pp
-	},
-	BinaryExpression: (node, indent) => {
+	const indexPrettyPrint = (node, indent) => {
+		const { base } = node
+		const base_formatted = prettyPrint(base, indent)
+		return indexNoParens[base.type] ? base_formatted : "(" + base_formatted + ")"
+	}
+
+	const AssignmentStatement = (node, indent) =>
+		mapPrettyPrintJoin(node.variables, indent) + (node.init.length ? " = " + mapPrettyPrintJoin(node.init, indent) : "")
+
+	const generateClauseFormatters = trailing_spaces => {
+		const IfClause = block(
+			(node, indent, body_formatted) => "if " + prettyPrint(node.condition, indent) + " then" + body_formatted,
+			true,
+			trailing_spaces
+		)
+		const ElseifClause = (node, indent) => "else" + IfClause(node, indent)
+		const ElseClause = block((_node, _indent, body_formatted) => "else" + body_formatted, true, true)
+		return {
+			IfClause,
+			ElseifClause,
+			ElseClause
+		}
+	}
+
+	const clauseFormatters = generateClauseFormatters()
+	const clauseFormattersTrailingSpaces = generateClauseFormatters(true)
+
+	const BinaryExpression = (node, indent) => {
 		const { left, right, operator } = node
 		const op_precedency = precedency[operator]
 		let left_pp = prettyPrint(left, indent)
@@ -220,120 +201,198 @@ let formatters = {
 		if (isBinaryExpression(left) && precedency[left.operator] <= op_precedency) left_pp = "(" + left_pp + ")"
 		if (isBinaryExpression(right) && precedency[right.operator] < op_precedency) right_pp = "(" + right_pp + ")"
 		return left_pp + " " + operator + " " + right_pp
-	},
-	CallStatement: (node, indent) => prettyPrint(node.expression, indent),
-	CallExpression: (node, indent) => {
-		if (node.arguments.length === 1) {
-			const argument = node.arguments[0]
-			if (argument.type === "StringLiteral")
-				return formatters.StringCallExpression(
-					{
-						base: node.base,
-						argument: argument
-					},
-					indent
-				)
-			if (argument.type === "TableConstructorExpression")
-				return formatters.TableCallExpression(
-					{
-						base: node.base,
-						arguments: argument
-					},
-					indent
-				)
-		}
-		return prettyPrint(node.base, indent) + "(" + mapPrettyPrintJoin(node.arguments, indent) + ")"
-	},
-	StringCallExpression: (node, indent) => prettyPrint(node.base, indent) + prettyPrint(node.argument),
-	TableCallExpression: (node, indent) => prettyPrint(node.base, indent) + prettyPrint(node.arguments, indent),
-
-	TableKey: (node, indent) => "[" + prettyPrint(node.key, indent) + "] = " + prettyPrint(node.value, indent),
-	TableKeyString: (node, indent) => prettyPrint(node.key, indent) + " = " + prettyPrint(node.value, indent),
-	TableValue: (node, indent) => prettyPrint(node.value, indent),
-	TableConstructorExpression: (node, indent) => {
-		const length = node.fields.length
-		if (length === 0) return "{}"
-		indent++
-		const fields_pp = mapPrettyPrint(node.fields, indent)
-		const inline =
-			length <= 3 &&
-			!node.fields.find(field => field.type === "Comment") &&
-			!fields_pp.find(formatted => formatted.length > 60 || formatted.includes("\n"))
-		const spacing = inline ? " " : indentationNewline(indent)
-		const end_spacing = inline ? " " : indentationNewline(indent - 1)
-		let table = "{"
-		let afterField
-		for (let i = 0; i < length; i++) {
-			const field = node.fields[i]
-			if (afterField) table += ","
-			table += spacing + prettyPrint(field, indent)
-			afterField = field.type !== "Comment"
-		}
-		return table + end_spacing + "}"
-	},
-	MemberExpression: (node, indent) => indexPrettyPrint(node, indent) + node.indexer + prettyPrint(node.identifier, indent),
-	IndexExpression: (node, indent) => indexPrettyPrint(node, indent) + "[" + prettyPrint(node.index, indent) + "]",
-
-	// TODO include sanity check if values are implemented for string literals (upstream feature needed)
-	StringLiteral: node => writeBeautifiedText(read(node.value || node.raw)),
-	NumericLiteral: node => {
-		node.value = node.value || read(node.raw)
-		const rawUpper = node.raw.toUpperCase()
-		if (rawUpper.startsWith("0X")) return "0x" + rawUpper.substring(2)
-		return writeBeautifiedText(node.value)
 	}
-}
 
-for (const literal of ["BooleanLiteral", "NilLiteral", "VarargLiteral"]) formatters[literal] = node => node.raw
+	let formatters = {
+		// comments
+		Comment: (node, indent) => {
+			let content = node.value.trim()
+			if (!node.raw.startsWith("--[") || !content.includes(newline)) return "-- " + content.trim()
+			return (
+				"--" +
+				writeLongText(
+					indentationText(indent + 1) +
+						content.replace(/\s*(\r?\n|\r)\s*/g, indentationNewline(indent + 1)) +
+						indentationNewline(indent)
+				)
+			)
+		},
 
-formatters.LogicalExpression = formatters.BinaryExpression
+		// various trivial stuff; identifiers, simple statements
+		Identifier: node => node.name,
+		Chunk: (node, indent) => prettyPrint(node.body, indent),
+		LabelStatement: node => "::" + node.label + "::",
+		GotoStatement: node => "goto " + node.label,
+		BreakStatement: _ => "break",
+		ReturnStatement: (node, indent) =>
+			node.arguments.length === 0 ? "return" : "return " + mapPrettyPrintJoin(node.arguments, indent),
+		DoStatement: block(() => "do"),
 
-const extraNewlines = {
-	FunctionDeclaration: true
-}
+		// assignments
+		AssignmentStatement,
+		LocalStatement: (node, indent) => "local " + AssignmentStatement(node, indent),
+		FunctionDeclaration: block(
+			node =>
+				(node.isLocal ? "local " : "") +
+				"function" +
+				(node.identifier ? " " + prettyPrint(node.identifier) : "") +
+				"(" +
+				mapPrettyPrintJoin(node.parameters) +
+				")"
+		),
 
-const prettyPrint = (node, indent) => {
-	if (Array.isArray(node)) {
-		const indentNewline = indentationNewline(indent)
-		let formatted = ""
-		let extraNewline
-		let i = 0
-		for (; i < node.length; i++) {
-			const notFirst = i > 0;
-			let comments = []
-			let j = i
-			for (; j < node.length && node[j].type === "Comment"; j++) comments.push(prettyPrint(node[j], indent))
-			if (i + comments.length === node.length) {
-				if (notFirst)
-					formatted += indentNewline;
-				formatted += comments.join(indentNewline)
-				break
+		// if-[elseif]-[else] chains
+		IfStatement: (node, indent) => {
+			const clauses = node.clauses
+			let out = ""
+			const prev_ind = indentationNewline(indent)
+			for (let i = 0; i < clauses.length; i++) {
+				const clause = clauses[i]
+				if (i !== 0) out += prev_ind
+				out += (i === clauses.length - 1 ? clauseFormattersTrailingSpaces : clauseFormatters)[clause.type](clause, indent)
 			}
-			i = j
-			const child = node[i]
-			const prevExtraNewline = extraNewline;
-			extraNewline = extraNewlines[child.type];
-			if (notFirst) formatted += ((prevExtraNewline || extraNewline) ? "\n":"") + indentNewline
-			if (comments.length > 0) {
-				formatted += comments.join(indentNewline)
-				formatted += indentNewline
+			return out + "end"
+		},
+
+		// loops
+		WhileStatement: block((node, indent) => "while " + prettyPrint(node.condition, indent) + " do"),
+		RepeatStatement: block(
+			(node, indent, body_formatted) => "repeat" + body_formatted + "until " + prettyPrint(node.condition, indent),
+			true,
+			true
+		),
+		ForNumericStatement: block(
+			node =>
+				"for " + prettyPrint(node.variable) + " = " + mapPrettyPrintJoin([node.start, node.end, node.step].filter(x => x)) + " do"
+		),
+		ForGenericStatement: block(
+			(node, indent) => "for " + mapPrettyPrintJoin(node.variables) + " in " + mapPrettyPrintJoin(node.iterators, indent) + " do"
+		),
+
+		// operators / expressions / calls
+		UnaryExpression: (node, indent) => {
+			const { operator, argument } = node
+			let argument_pp = prettyPrint(argument, indent)
+			if (isBinaryExpression(argument) && precedency[argument.operator] < precedency.unary) argument_pp = "(" + argument_pp + ")"
+			else if (operator === "not" || argument.type === "UnaryExpression") argument_pp = " " + argument_pp
+			return operator + argument_pp
+		},
+		BinaryExpression,
+		LogicalExpression: BinaryExpression,
+		CallStatement: (node, indent) => prettyPrint(node.expression, indent),
+		CallExpression: (node, indent) => {
+			if (node.arguments.length === 1) {
+				const argument = node.arguments[0]
+				if (argument.type === "StringLiteral")
+					return formatters.StringCallExpression(
+						{
+							base: node.base,
+							argument: argument
+						},
+						indent
+					)
+				if (argument.type === "TableConstructorExpression")
+					return formatters.TableCallExpression(
+						{
+							base: node.base,
+							arguments: argument
+						},
+						indent
+					)
 			}
-			formatted += prettyPrint(child, indent)
+			return prettyPrint(node.base, indent) + "(" + mapPrettyPrintJoin(node.arguments, indent) + ")"
+		},
+		StringCallExpression: (node, indent) => prettyPrint(node.base, indent) + prettyPrint(node.argument),
+		TableCallExpression: (node, indent) => prettyPrint(node.base, indent) + prettyPrint(node.arguments, indent),
+
+		TableKey: (node, indent) => "[" + prettyPrint(node.key, indent) + "] = " + prettyPrint(node.value, indent),
+		TableKeyString: (node, indent) => prettyPrint(node.key, indent) + " = " + prettyPrint(node.value, indent),
+		TableValue: (node, indent) => prettyPrint(node.value, indent),
+		TableConstructorExpression: (node, indent) => {
+			const length = node.fields.length
+			if (length === 0) return "{}"
+			indent++
+			const fields_pp = mapPrettyPrint(node.fields, indent)
+			const inline =
+				inline_table &&
+				length <= inline_table.max_field_count &&
+				!node.fields.find(field => field.type === "Comment") &&
+				!fields_pp.find(formatted => formatted.length > inline_table.max_field_length || formatted.includes(newline))
+			const spacing = inline ? " " : indentationNewline(indent)
+			const end_spacing = inline ? " " : indentationNewline(indent - 1)
+			let table = "{"
+			let afterField
+			for (let i = 0; i < length; i++) {
+				const field = node.fields[i]
+				if (afterField) table += ","
+				table += spacing + prettyPrint(field, indent)
+				afterField = field.type !== "Comment"
+			}
+			return table + end_spacing + "}"
+		},
+		MemberExpression: (node, indent) => indexPrettyPrint(node, indent) + node.indexer + prettyPrint(node.identifier, indent),
+		IndexExpression: (node, indent) => indexPrettyPrint(node, indent) + "[" + prettyPrint(node.index, indent) + "]",
+
+		NilLiteral: node => node.raw,
+		VarargLiteral: node => node.raw,
+		BooleanLiteral: node => node.raw,
+		StringLiteral: node => writeBeautifiedText(read(node.value || node.raw)),
+		NumericLiteral: node => {
+			node.value = node.value || read(node.raw)
+			const rawUpper = node.raw.toUpperCase()
+			if (rawUpper.startsWith("0X")) return "0x" + rawUpper.substring(2)
+			return writeBeautifiedText(node.value)
 		}
-		return formatted
 	}
-	let formatter = formatters[node.type]
-	if (!formatter) throw new Error("Formatter for " + node.type + " not implemented yet")
-	return formatter(node, indent)
-}
 
-const prettyPrintText = text => {
-	const ast = parse(text)
-	fixRanges(ast)
-	insertComments(ast)
-	return prettyPrint(ast, 0)
+	const extraNewlines = {
+		FunctionDeclaration: true
+	}
+
+	const prettyPrint = (node, indent) => {
+		if (Array.isArray(node)) {
+			const indentNewline = indentationNewline(indent)
+			if (!extra_newlines) return mapPrettyPrint(node, indent).join(indentNewline)
+			let formatted = ""
+			let extraNewline
+			let i = 0
+			for (; i < node.length; i++) {
+				const notFirst = i > 0
+				let comments = []
+				let j = i
+				for (; j < node.length && node[j].type === "Comment"; j++) comments.push(prettyPrint(node[j], indent))
+				if (i + comments.length === node.length) {
+					if (notFirst) formatted += indentNewline
+					formatted += comments.join(indentNewline)
+					break
+				}
+				i = j
+				const child = node[i]
+				const prevExtraNewline = extraNewline
+				extraNewline = extraNewlines[child.type]
+				if (notFirst) formatted += (prevExtraNewline || extraNewline ? newline : "") + indentNewline
+				if (comments.length > 0) {
+					formatted += comments.join(indentNewline)
+					formatted += indentNewline
+				}
+				formatted += prettyPrint(child, indent)
+			}
+			return formatted
+		}
+		const nodeFormatter = formatters[node.type]
+		if (!nodeFormatter) throw new Error("Formatter for " + node.type + " not implemented yet")
+		return nodeFormatter(node, indent)
+	}
+
+	return text => {
+		const ast = parse(text)
+		fixRanges(ast)
+		insertComments(ast)
+		return prettyPrint(ast, 0)
+	}
 }
 
 module.exports = {
-	formatChunk: prettyPrintText
+	formatChunk: formatter(),
+	formatter
 }

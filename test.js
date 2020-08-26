@@ -11,7 +11,7 @@ new litest.Tester(luafmt.formatChunk).testEqualsAll({
 	"f[[_]]": `f"_"`,
 	"f({_})": "f{ _ }",
 	"f({_})._ = _": "f{ _ }._ = _",
-[`if _ then --comment
+	[`if _ then --comment
 do _=_--another comment
 end end`]: `if _ then
 	-- comment
@@ -83,7 +83,7 @@ function _() end`,
 	_()
 	_()
 until _`,
-"if _ then _() end": "if _ then _() end",
+	"if _ then _() end": "if _ then _() end",
 	[`function _()end
 _()
 function _()end`]: `function _() end
@@ -99,5 +99,24 @@ function _()end end`]: `do
 	_()
 
 	function _() end
+end`
+})
+
+new litest.Tester(
+	luafmt.formatter({
+		extra_newlines: false,
+		inline: {
+			block: false,
+			table: false
+		}
+	})
+).testEqualsAll({
+	"function _() end; function _() end": `function _() end
+function _() end`,
+	"_{1}": `_{
+	1
+}`,
+	"if _ then _() end": `if _ then
+	_()
 end`
 })
