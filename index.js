@@ -299,7 +299,7 @@ const prettyPrint = (node, indent) => {
 		let extraNewline
 		let i = 0
 		for (; i < node.length; i++) {
-			if (i > 0 && !extraNewline) formatted += indentNewline
+			if (i > 0) formatted += indentNewline
 			let comments = []
 			let j = i
 			for (; j < node.length && node[j].type === "Comment"; j++) comments.push(prettyPrint(node[j], indent))
@@ -309,14 +309,14 @@ const prettyPrint = (node, indent) => {
 			}
 			i = j
 			const child = node[i]
-			extraNewline = extraNewlines[child.type]
-			if (extraNewline && i > 0) formatted += indentNewline
+			const prevExtraNewline = extraNewline;
+			extraNewline = extraNewlines[child.type];
+			if (prevExtraNewline || extraNewline && i > 0) formatted += indentNewline
 			if (comments.length > 0) {
 				formatted += comments.join(indentNewline)
 				formatted += indentNewline
 			}
 			formatted += prettyPrint(child, indent)
-			if (extraNewline && i < node.length - 1) formatted += indentNewline
 		}
 		return formatted
 	}

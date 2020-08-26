@@ -63,3 +63,6 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
 * `v1.2.2`
   * Fixed repeat-until statement formatting
   * Bumped `luon` version to `v1.2.6`
+* `v1.2.3`
+  * Fixed extra newlines
+  * Improved tests
