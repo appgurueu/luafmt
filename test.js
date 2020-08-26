@@ -41,7 +41,7 @@ line]]`]: `--[[
 	end
 end`,
 	"do do do --[[comment]] end end end": `do
-	do	
+	do
 		do
 			-- comment
 		end
@@ -78,17 +78,26 @@ function _() end`,
 	-- comment
 	_ = function() end
 }`,
-"repeat _() until _": "repeat _() until _",
-"repeat _();_() until _": `repeat
+	"repeat _() until _": "repeat _() until _",
+	"repeat _();_() until _": `repeat
 	_()
 	_()
 until _`,
 "if _ then _() end": "if _ then _() end",
-[`function _()end
+	[`function _()end
 _()
 function _()end`]: `function _() end
 
 _()
 
-function _() end`
+function _() end`,
+	[`do function _()end
+_()
+function _()end end`]: `do
+	function _() end
+
+	_()
+
+	function _() end
+end`
 })

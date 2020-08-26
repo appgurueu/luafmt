@@ -66,3 +66,5 @@ Takes a Lua chunk (think file / function body) as string and returns a formatted
 * `v1.2.3`
   * Fixed extra newlines
   * Improved tests
+* `v1.2.4`
+  * Fixed extra newlines
