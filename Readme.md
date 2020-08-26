@@ -93,5 +93,7 @@ const configuredFormatChunk = formatter({
   * Improved tests
 * `v1.2.4`
   * Fixed extra newlines
-* `v1.3.0`
+* `v1.3.0`, `v1.4.0`
   * Added configuration
+* `v1.4.1`
+  * Fixed Readme
