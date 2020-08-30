@@ -97,3 +97,6 @@ const configuredFormatChunk = formatter({
   * Added configuration
 * `v1.4.1`
   * Fixed Readme
+* `v1.4.2`
+  * Fixed (removed) trailing commas after fields followed by comments
+  * Fixed (removed) obsolete (possibly invalid) bracketing (precedencies)

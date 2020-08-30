@@ -1,6 +1,6 @@
 {
   "name": "@appguru/luafmt",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "esversion": 6,
   "description": "A small Lua formatter / pretty printer",
   "main": "./index.js",
