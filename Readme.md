@@ -100,3 +100,5 @@ const configuredFormatChunk = formatter({
 * `v1.4.2`
   * Fixed (removed) trailing commas after fields followed by comments
   * Fixed (removed) obsolete (possibly invalid) bracketing (precedencies)
+* `v1.4.3`
+  * Tweaked: Obsolete brackets are omitted in the case of concatenation, but not for exponentation
