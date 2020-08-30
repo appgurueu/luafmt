@@ -99,7 +99,12 @@ function _()end end`]: `do
 	_()
 
 	function _() end
-end`
+end`,
+	[`_{_=_--_
+}`]: `_{
+	_ = _
+	-- _
+}`
 })
 
 new litest.Tester(

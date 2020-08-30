@@ -320,15 +320,20 @@ const formatter = conf => {
 				!fields_pp.find(formatted => formatted.length > inline_table.max_field_length || formatted.includes(newline))
 			const spacing = inline ? " " : indentationNewline(indent)
 			const end_spacing = inline ? " " : indentationNewline(indent - 1)
-			let table = "{"
-			let afterField
-			for (let i = 0; i < length; i++) {
+			let table = [end_spacing + "}"]
+			let beforeField = false
+			for (let i = length -1; i > -1; i--) {
 				const field = node.fields[i]
-				if (afterField) table += ","
-				table += spacing + prettyPrint(field, indent)
-				afterField = field.type !== "Comment"
+				const isField = field.type !== "Comment"
+				if (beforeField && isField) {
+					table.push(",")
+					beforeField = false
+				}
+				table.push(spacing + prettyPrint(field, indent))
+				beforeField = beforeField || isField
 			}
-			return table + end_spacing + "}"
+			table.push("{")
+			return table.reverse().join("")
 		},
 		MemberExpression: (node, indent) => indexPrettyPrint(node, indent) + node.indexer + prettyPrint(node.identifier, indent),
 		IndexExpression: (node, indent) => indexPrettyPrint(node, indent) + "[" + prettyPrint(node.index, indent) + "]",
