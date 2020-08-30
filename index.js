@@ -198,8 +198,8 @@ const formatter = conf => {
 		const op_precedency = precedency[operator]
 		let left_pp = prettyPrint(left, indent)
 		let right_pp = prettyPrint(right, indent)
-		if (isBinaryExpression(left) && precedency[left.operator] <= op_precedency) left_pp = "(" + left_pp + ")"
-		if (isBinaryExpression(right) && precedency[right.operator] < op_precedency) right_pp = "(" + right_pp + ")"
+		if (isBinaryExpression(left) && precedency[left.operator] < op_precedency) left_pp = "(" + left_pp + ")"
+		if (isBinaryExpression(right) && precedency[right.operator] <= op_precedency) right_pp = "(" + right_pp + ")"
 		return left_pp + " " + operator + " " + right_pp
 	}
 
