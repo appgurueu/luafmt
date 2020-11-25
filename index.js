@@ -199,7 +199,11 @@ const formatter = conf => {
 		let left_pp = prettyPrint(left, indent)
 		let right_pp = prettyPrint(right, indent)
 		if (isBinaryExpression(left) && precedency[left.operator] < op_precedency) left_pp = "(" + left_pp + ")"
-		if (isBinaryExpression(right) && precedency[right.operator] < op_precedency || (right.operator !== ".." && precedency[right.operator] == op_precedency)) right_pp = "(" + right_pp + ")"
+		if (
+			(isBinaryExpression(right) && precedency[right.operator] < op_precedency) ||
+			(right.operator !== ".." && precedency[right.operator] == op_precedency)
+		)
+			right_pp = "(" + right_pp + ")"
 		return left_pp + " " + operator + " " + right_pp
 	}
 
@@ -322,7 +326,7 @@ const formatter = conf => {
 			const end_spacing = inline ? " " : indentationNewline(indent - 1)
 			let table = [end_spacing + "}"]
 			let beforeField = false
-			for (let i = length -1; i > -1; i--) {
+			for (let i = length - 1; i > -1; i--) {
 				const field = node.fields[i]
 				const isField = field.type !== "Comment"
 				if (beforeField && isField) {
@@ -389,15 +393,23 @@ const formatter = conf => {
 		return nodeFormatter(node, indent)
 	}
 
+	return prettyPrint
+}
+
+const astFormatter = conf => (ast, indent) => formatter(conf)(ast, indent === undefined ? 0 : indent)
+
+const textFormatter = conf => {
+	const formatter = astFormatter(conf)
 	return text => {
 		const ast = parse(text)
 		fixRanges(ast)
 		insertComments(ast)
-		return prettyPrint(ast, 0)
+		return formatter(ast)
 	}
 }
 
 module.exports = {
-	formatChunk: formatter(),
-	formatter
+	ast: { fixRanges, insertComments, formatter: astFormatter },
+	formatChunk: textFormatter(),
+	formatter: textFormatter
 }

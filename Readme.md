@@ -28,7 +28,36 @@ npm install @appguru/luafmt
 And import it like this:
 
 ```javascript
-const { formatChunk, formatter } = require("@appguru/luafmt");
+const { ast, formatChunk, formatter } = require("@appguru/luafmt")
+```
+
+#### `ast`
+
+Abstract syntax tree methods.
+
+##### `fixRanges`
+
+Makes luaparse ranges be from `if` to `end` and not from `if` to `then` for all IfClauses of the AST.
+
+##### `insertComments(chunk)`
+
+Inserts comments into the top-level abstract syntax tree provided by luaparse.
+
+##### `formatter(conf)`
+
+Provides a formatter which returns a function `format(ast, [indent])` taking a luaparse AST & optionally the base indentation as number.
+Note that you have to call [`fixRanges`] and [`insertComments`] on the AST yourself before using it:
+
+```javascript
+const { ast } = require("@appguru/luafmt")
+const { parse } = require("luaparse") 
+const srcAST = parse(`-- hello world
+if true then print'hello world!'
+else _ = _ end`)
+const formatter = ast.formatter()
+ast.fixRanges(srcAST)
+ast.insertComments(srcAST)
+console.log(formatter(srcAST))
 ```
 
 #### `formatChunk(text)`
@@ -102,3 +131,5 @@ const configuredFormatChunk = formatter({
   * Fixed (removed) obsolete (possibly invalid) bracketing (precedencies)
 * `v1.4.3`
   * Tweaked: Obsolete brackets are omitted in the case of concatenation, but not for exponentation
+* `v1.5.0`
+  * Exposed AST-functions `fixRanges` & `insertComments` as well as lower-level AST formatter
